@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title data-bindings="firstname">Title</title>
+    <script src="JsDataBindings.js"></script>
+</head>
+<body>
+<input data-bindings="firstname, bgc <-" type="text">
+<input data-bindings="firstname,bgc->style, disabled -> disabled" type="text">
+<input data-bindings="firstname, disabled -> disabled" type="text">
+<input data-bindings="lastname,bgc->style, disabled -> disabled" type="text">
+<input data-bindings="city<-, disabled -> disabled" type="text">
+<input data-bindings="zip<->innerHTML,bgc->style, disabled -> disabled" type="number">
+
+
+<script src="main.js"></script>
+</body>
+</html>
