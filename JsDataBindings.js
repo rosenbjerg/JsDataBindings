@@ -9,35 +9,37 @@ function JsDataBinding(htmlElement)
     function Binding(element, target, bindingMode) {
         this.domElement = element;
         this.targetProperty = target;
-        this.bindingMode = bindingMode;
-        // this.value = "";
-        this.onPropertyChanged = function (value) {
-            // if (this.value !== val) {
-            //     this.value = val;
-            console.log("onPropertyChanged : " + this.targetProperty + " = " + value);
-            console.log(this.domElement);
-                if (this.bindingMode !== "<-")
-                    this.domElement[this.targetProperty] = value;
-            // }
+        this.mode = bindingMode;
+        this.observer = new MutationObserver(onElementRemovedFromDom);
+        this.onPropertyChanged = function (sender, value) {
+            if (this.domElement === sender)
+                return;
+            // console.log("onPropertyChanged : " + this.targetProperty + " = " + value);
+            if (this.mode !== "<-")
+                this.domElement[this.targetProperty] = value;
         };
+    }
+    function onElementRemovedFromDom(arg) {
+        console.log(arg);
     }
     function createGetterSetter(property) {
         return function (val) {
             if (arguments.length === 0) {
                 return _values[property];
-                // return binding.value;
             }
             else {
-                propertyChanged(property, val);
+                propertyChanged(null, property, val);
             }
         };
     }
-    function propertyChanged(property, value) {
+    function propertyChanged(sender, property, value) {
         if (_values[property] === value)
             return;
         _values[property] = value;
+        console.log(property);
+        console.log(_bindings[property]);
         _bindings[property].forEach(function (b) {
-            b.onPropertyChanged(value);
+            b.onPropertyChanged(sender, value);
         })
     }
     function bindElement(jsDataBinding, element, bs, isInputElement) {
@@ -56,35 +58,45 @@ function JsDataBinding(htmlElement)
         }
         let binding = new Binding(element, target, bindingMode);
 
-        if (!jsDataBinding.hasOwnProperty(property))
-            jsDataBinding[property] = createGetterSetter(property);
 
-        if (isInputElement && target === "value" && binding.bindingMode !== '->'){
+        if (bindingMode !== "->" && element[property])
+            _values[property] = element[property];
+
+        if (!_bindings.hasOwnProperty(property))
+        {
+            _bindings[property] = [];
+            // console.log("created binding collection: " + property)
+        }
+
+        if (!jsDataBinding.hasOwnProperty(property))
+        {
+            jsDataBinding[property] = createGetterSetter(property);
+            // console.log("created getter/setter for " + property)
+        }
+
+        if (isInputElement && target === "value" && binding.mode !== '->'){
             element.addEventListener("input", function (event) {
-                let value = event.target[target];
-                // binding.value = event.target[target];
-                propertyChanged(property, value);
-                // propertyChanged(source, event.target[target]);
+                propertyChanged(event.target, property, event.target.value);
             });
         }
 
-        if (bindingMode !== "->" && element[property])
-            jsDataBinding[property] = element[property];
-
-        if (!_bindings[property])
-            _bindings[property] = [];
         _bindings[property].push(binding);
+        // console.log("added binding: " + property + "   " + bindingMode);
 
         // if (MutationObserver)
+
+        binding.observer.observe(element);
         //TODO Create preferred binding using MutationObserver and use this as fallback
-        element.addEventListener("DOMNodeRemoved", function (ev) {
-            if (ev.target !== element)
-                return;
-            let i = _bindings[property].indexOf(binding);
-            _bindings[property].splice(i, 1);
-            if (_bindings[property].length === 0)
-                delete _bindings[property];
-        })
+        // element.addEventListener("DOMNodeRemoved", function (ev) {
+        //     if (ev.target !== element)
+        //         return;
+        //     console.log("removing");
+        //     console.log(ev);
+        //     let i = _bindings[property].indexOf(binding);
+        //     _bindings[property].splice(i, 1);
+        //     if (_bindings[property].length === 0)
+        //         delete _bindings[property];
+        // })
     }
 
     this.indexDomElement = function index_dom_element(htmlElement) {
