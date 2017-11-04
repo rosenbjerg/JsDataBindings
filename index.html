@@ -7,12 +7,16 @@
 </head>
 <body>
 <input data-bindings="firstname, bgc <-" type="text">
-<input data-bindings="firstname,bgc->style, disabled -> disabled" type="text">
+<input data-bindings="firstname,bgc->style" type="text">
 <input data-bindings="firstname, disabled -> disabled" type="text">
-<input data-bindings="lastname,bgc->style, disabled -> disabled" type="text">
-<input data-bindings="city<-, disabled -> disabled" type="text">
-<input data-bindings="zip<->innerHTML,bgc->style, disabled -> disabled" type="number">
-
+<input data-bindings="lastname" type="text">
+<input data-bindings="city<-">
+<input data-bindings="zip,bgc->style, disabled -> disabled" type="number">
+<select data-bindings="s">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+</select>
 
 <script src="main.js"></script>
 </body>
