@@ -6,18 +6,19 @@
     <script src="JsDataBindings.js"></script>
 </head>
 <body>
-<input data-bindings="firstname, bgc <-" type="text">
-<input data-bindings="firstname,bgc->style" type="text">
-<input data-bindings="firstname, disabled -> disabled" type="text">
-<input data-bindings="lastname" type="text">
-<input data-bindings="city<-">
-<input data-bindings="zip,bgc->style, disabled -> disabled" type="number">
-<select data-bindings="s">
-    <option value="1">1</option>
-    <option value="2">2</option>
-    <option value="3">3</option>
-</select>
-
+<div id="container" data-bindings="test-binding">
+    <input id="daws1" data-bindings="firstname" type="text">
+    <input id="daws2" data-bindings="firstname" type="text">
+    <input id="daws3" data-bindings="firstname" type="text">
+    <input data-bindings="lastname" type="text">
+    <input data-bindings="city<-, disabled->disabled">
+    <input data-bindings="zip,bgc->style, disabled -> disabled" type="number">
+    <select data-bindings="s" id="sel">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+    </select>
+</div>
 <script src="main.js"></script>
 </body>
 </html>
