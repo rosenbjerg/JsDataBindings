@@ -10,16 +10,16 @@ The 'empty' JsDataBinding object has two functions:
 `indexDomElement(htmlElement)`. This function is used to parse the data-bindings specified in the HTML, 
 and create getter and setter functions for each binding property specified in the bindings.
 
-#### Attribute format
+### Attribute format
 The data-bindings are declared in the HTML data- attribute: `data-bindings`.
-Each binding each specified as with the name of a source property, a binding mode and the name a target property.
-* The source property is the name of the getter/setter function created.
-* The binding mode can be one of three options: 
+Each binding is specified with the name of a source property, a binding mode and the name a target property.
+* The **source property** is the name of the getter/setter function that will be created.
+* The **binding mode** can be one of four options: 
   * `->` 1-way
   * `<->` 2-way
   * `<-` 1-way to source
   * `-` Use default for HTMLElement type
-* The target property is the name of the property on the HTMLElement to bind to.
+* The **target property** is the name of the property on the HTMLElement to bind to.
 
 The target property can be omitted.
 
@@ -36,17 +36,17 @@ Defaults values for binding mode:
 
 Multiple bindings are simply separated with a comma (`,`)
 
-#### Functions
-`indexDomElement(htmlElement)` binds all elements inside the html element with `data-bindings` attribute
+### Functions
+* `indexDomElement(htmlElement)` binds all elements inside the html element with `data-bindings` attribute
 
-`detach()` removes all bindings and getter/setter functions. 
+* `detach()` removes all bindings and getter/setter functions. 
 
-One getter/setter function for each source property. 
+* One getter/setter function for each source property. 
 The getter/setter functions returns the current value when called without a parameter,
 and sets the value when called with one parameter.
 
-#### Example
-HTML:
+### Example
+**HTML:**
 ```
 ..
 <div id="container">
@@ -56,14 +56,17 @@ HTML:
 </div>
 ..
 ```
-JavaScript:
+
+
+**JavaScript:**
 ```
 let cb = new JsDataBindings(document.getElementById("container"));
 cb.firstname("John"); // Sets the value to "John"
 cb.firstname(); // Gets the value
 ```
+The `cb` object will have a getter/setter function for _firstname_, _lastname_, _disable_ and _city_.
 
-#### Notes
+### Notes
 [MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) support is required to detect removal of elements inside an indexed html element.
 Consider using a polyfill for MutationObserver if targeting browsers without support for it.
 
