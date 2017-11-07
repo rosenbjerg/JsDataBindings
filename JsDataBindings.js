@@ -7,18 +7,22 @@ function JsDataBindings(htmlElement)
     let _values = {};
     let _handlers = {};
     let _observer;
+    let _this;
 
     function handleDomMutation(event) {
         if (event[0].type === "childList"){
-            if (event[0].removedNodes.length !== 0){
-                let nodes = event[0].removedNodes;
-                for (let i = 0; i < nodes.length; i++){
-                    let bindings = getBindingsFromAttribute(nodes[i]);
-                    for (let j = 0; j < bindings.length; j++){
+            let added = event[0].addedNodes;
+            let addedLength = added.length;
+            let removed = event[0].removedNodes;
+            let removedLength = removed.length;
+            if (removedLength !== 0 && addedLength === 0){
+                for (let i = 0; i < removedLength; i++){
+                    let bindings = getBindingsFromAttribute(removed[i]);
+                    for (let j = 0, maxj = bindings.length; j < maxj; j++){
                         let sourceProperty = bindings[j][1];
                         let jsBindings = _bindings[sourceProperty];
-                        for (let k = 0; k < jsBindings.length; k++){
-                            if (jsBindings[k].element !== nodes[i])
+                        for (let k = 0, maxk = jsBindings.length; k < maxk; k++){
+                            if (jsBindings[k].element !== removed[i])
                                 continue;
                             jsBindings.splice(k, 1);
                             if (jsBindings.length === 0)
@@ -28,8 +32,14 @@ function JsDataBindings(htmlElement)
                     }
                 }
             }
-            else if (event[0].addedNodes.length !== 0){
-                console.log(event);
+            else if (removedLength === 0 && addedLength !== 0){
+                console.log("only added");
+                for (let i = 0; i < addedLength; i++){
+                    indexElement(_this, added[i]);
+                }
+            }
+            else {
+                console.log("added and removed");
             }
         }
     }
@@ -38,7 +48,7 @@ function JsDataBindings(htmlElement)
             return;
         _values[sourceProperty] = value;
         let bindings = _bindings[sourceProperty];
-        for (let i = 0; i < bindings.length; i++) {
+        for (let i = 0, max = bindings.length; i < max; i++) {
             bindings[i].onPropertyChanged(sender, value);
         }
     }
@@ -54,14 +64,6 @@ function JsDataBindings(htmlElement)
         }
     }
     function noFormatter(str) { return str; }
-    function createGetterSetter(sourceProperty) {
-        return function (value) {
-            if (value === undefined)
-                return _values[sourceProperty];
-            else
-                propertyChanged(null, sourceProperty, value);
-        };
-    }
     function getInputHandler(sourceProperty) {
         if (_handlers[sourceProperty] === undefined){
             _handlers[sourceProperty] = function (event) {
@@ -72,8 +74,8 @@ function JsDataBindings(htmlElement)
     }
     function getBindingsFromAttribute(htmlElement) {
         let arr = [];
-        if (htmlElement.getAttribute === undefined)
-            return arr;
+        // if (htmlElement.getAttribute === undefined)
+        //     return arr;
         let attr = htmlElement.getAttribute("data-bindings");
         if (!attr)
             return arr;
@@ -102,7 +104,16 @@ function JsDataBindings(htmlElement)
             _values[sourceProperty] = "";
         }
         if (jsDataBinding[sourceProperty] === undefined)
-            jsDataBinding[sourceProperty] = createGetterSetter(sourceProperty);
+        {
+            Object.defineProperty(jsDataBinding, sourceProperty, {
+                get: function () {
+                    return _values[sourceProperty];
+                },
+                set: function (value) {
+                    propertyChanged(null, sourceProperty, value);
+                }
+            });
+        }
 
         let binding = new Binding(element, targetProperty, bindingMode);
         if (bindingMode !== '->'){
@@ -135,23 +146,29 @@ function JsDataBindings(htmlElement)
         }
         return false;
     };
-    this.indexDomElement = function index_dom_element(htmlElement) {
-        if (!htmlElement instanceof HTMLElement)
-            throw new TypeError("Argument must be a HTMLElement");
-        var elements = htmlElement.getElementsByTagName('*');
-        for (let i = 0, max = elements.length; i < max; i++) {
-            let element = elements[i];
-            let bindings = getBindingsFromAttribute(element);
-            if (bindings.length === 0)
-                continue;
-            let isInputElement = element instanceof HTMLInputElement || element instanceof HTMLSelectElement;
-            for (let j = 0, max2 = bindings.length; j < max2; j++){
-                bindElement(this, element, bindings[j], isInputElement);
-            }
+    function indexElement(jsDataBinding, htmlElement) {
+        let bindings = getBindingsFromAttribute(htmlElement);
+        if (bindings.length === 0)
+            return;
+        let isInputElement = htmlElement instanceof HTMLInputElement || htmlElement instanceof HTMLSelectElement;
+        for (let j = 0, max2 = bindings.length; j < max2; j++){
+            bindElement(jsDataBinding, htmlElement, bindings[j], isInputElement);
         }
+    }
+    this.indexDomElement = function index_dom_element(htmlElement) {
+        if (typeof htmlElement === 'string')
+            htmlElement = document.querySelector(htmlElement);
+        if (htmlElement === null || !htmlElement instanceof HTMLElement)
+            throw new TypeError("Argument must be an HTMLElement or a selector for one");
+        var elements = htmlElement.querySelectorAll('[data-bindings]');
+        for (let i = 0, max = elements.length; i < max; i++) {
+            indexElement(this, elements[i]);
+        }
+        indexElement(this, htmlElement);
         if (_observer === undefined && "MutationObserver" in window){
             _observer = new MutationObserver(handleDomMutation);
             _observer.observe(htmlElement, {childList:true, subtree:true});
+            _this = this;
         }
     };
     this.detach = function detach_all_bindings () {

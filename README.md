@@ -41,9 +41,9 @@ Multiple bindings are simply separated with a comma (`,`)
 
 * `detach()` removes all bindings and getter/setter functions. 
 
-* One getter/setter function for each source property. 
-The getter/setter functions returns the current value when called without a parameter,
-and sets the value when called with one parameter.
+* `setFormatter(htmlElement, sourceProperty, formatFunction)` sets the formatter function for a given 
+
+* One property for each unique source property. 
 
 ### Example
 **HTML:**
@@ -61,10 +61,10 @@ and sets the value when called with one parameter.
 **JavaScript:**
 ```
 let cb = new JsDataBindings(document.getElementById("container"));
-cb.firstname("John"); // Sets the value to "John"
-cb.firstname(); // Gets the value
+cb.firstname = "John"; // Sets the value to "John"
+let fn = cb.firstname; // Gets the value
 ```
-The `cb` object will have a getter/setter function for _firstname_, _lastname_, _disable_ and _city_.
+The `cb` object will have a property for _firstname_, _lastname_, _disable_ and _city_.
 
 ### Notes
 [MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) support is required to detect removal of elements inside an indexed html element.
