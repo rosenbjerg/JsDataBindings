@@ -74,8 +74,8 @@ function JsDataBindings(htmlElement)
     }
     function getBindingsFromAttribute(htmlElement) {
         let arr = [];
-        // if (htmlElement.getAttribute === undefined)
-        //     return arr;
+        if (htmlElement.getAttribute === undefined)
+            return arr;
         let attr = htmlElement.getAttribute("data-bindings");
         if (!attr)
             return arr;
@@ -123,6 +123,8 @@ function JsDataBindings(htmlElement)
                 element.addEventListener("input", getInputHandler(sourceProperty));
             }
         }
+        if (bindingMode !== '<-' && _values[sourceProperty])
+            element[targetProperty] = _values[sourceProperty];
         _bindings[sourceProperty].push(binding);
     }
 

@@ -1,10 +1,11 @@
 //init after DOM loaded
-
 // let sdf = document.body.querySelector("*[data-bindings");
 // console.log(sdf);
-let cb = new JsDataBindings("#container");
-// cb.indexDomElement(document.head);
+let cb = new JsDataBindings("#container2");
 
+
+// cb.indexDomElement(document.head);
+// cb.indexDomElement("#container2");
 if (true){
     let iterations = 10000;
     for (let i = 0; i < 10; i++){
