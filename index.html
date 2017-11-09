@@ -7,9 +7,9 @@
 </head>
 <body>
 <div id="container" data-bindings="test-binding">
-    <input id="daws1" data-bindings="firstname" type="text">
-    <input id="daws2" data-bindings="firstname" type="text">
-    <input id="daws3" data-bindings="firstname" type="text">
+    <input data-bindings="firstname" value="testa" type="text">
+    <input data-bindings="firstname" value="testb" type="text">
+    <input data-bindings="firstname" type="text">
     <input data-bindings="lastname" type="text">
     <input data-bindings="city<-, disabled->disabled">
     <input data-bindings="zip,bgc->style, disabled -> disabled" type="number">
@@ -18,12 +18,12 @@
         <option value="2">2</option>
         <option value="3">3</option>
     </select>
-    <div data-bindings="firstname"></div>
+    <div  id="test" data-bindings="firstname"></div>
 </div>
-<div id="container2" data-bindings="test-binding">
-    <input data-bindings="firstname" type="text">
-    <input data-bindings="firstname" type="text">
-    <input data-bindings="firstname" type="text">
+<div id="container2">
+    <input id="daws1" data-bindings="firstname" type="text">
+    <input id="daws2" data-bindings="firstname" type="text">
+    <input id="daws3" data-bindings="firstname" type="text">
 </div>
 <script src="main.js"></script>
 </body>

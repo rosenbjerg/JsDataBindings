@@ -2,7 +2,18 @@
 
 function JsDataBindings(htmlElement)
 {
-    let variableRegex = /(\w+) *(([<>-]+) *(\w+)?)?/;
+    const BINDINGMODES = {
+        ONE_WAY: "->",
+        TWO_WAY: "<->",
+        ONE_WAY_TO_SOURCE: "<-",
+        DEFAULT: "-"
+    };
+    const DEFAULTS = {
+        INPUT: "value",
+        DIV: "innerText"
+    };
+    const attribute = "data-bindings";
+    const variableRegex = / *(\w+) *(([<>-]+) *(\w+)?)? */;
     let _bindings = {};
     let _values = {};
     let _handlers = {};
@@ -15,7 +26,8 @@ function JsDataBindings(htmlElement)
             let addedLength = added.length;
             let removed = event[0].removedNodes;
             let removedLength = removed.length;
-            if (removedLength !== 0 && addedLength === 0){
+            if (removedLength !== 0){
+                console.log(removed);
                 for (let i = 0; i < removedLength; i++){
                     let bindings = getBindingsFromAttribute(removed[i]);
                     for (let j = 0, maxj = bindings.length; j < maxj; j++){
@@ -32,14 +44,13 @@ function JsDataBindings(htmlElement)
                     }
                 }
             }
-            else if (removedLength === 0 && addedLength !== 0){
-                console.log("only added");
-                for (let i = 0; i < addedLength; i++){
-                    indexElement(_this, added[i]);
+            if (addedLength !== 0) {
+                console.log(added);
+                if (addedLength > removedLength) {
+                    for (let i = 0; i < addedLength; i++){
+                        indexElement(_this, added[i]);
+                    }
                 }
-            }
-            else {
-                console.log("added and removed");
             }
         }
     }
@@ -59,7 +70,7 @@ function JsDataBindings(htmlElement)
         this.mode = bindingMode;
         this.formatter = noFormatter;
         this.onPropertyChanged = function (sender, value){
-            if (this.element !== sender && this.mode !== "<-")
+            if (this.element !== sender && this.mode !== BINDINGMODES.ONE_WAY_TO_SOURCE)
                 this.element[this.target] = this.formatter(value);
         }
     }
@@ -76,7 +87,7 @@ function JsDataBindings(htmlElement)
         let arr = [];
         if (htmlElement.getAttribute === undefined)
             return arr;
-        let attr = htmlElement.getAttribute("data-bindings");
+        let attr = htmlElement.getAttribute(attribute);
         if (!attr)
             return arr;
         let bindingStrings = attr.split(',');
@@ -89,11 +100,11 @@ function JsDataBindings(htmlElement)
         return arr;
     }
     function bindElement(jsDataBinding, element, bs, isInputElement) {
-        let targetProperty = isInputElement ? "value" : "innerText";
-        let bindingMode = isInputElement ? "<->" : "->";
+        let targetProperty = isInputElement ? DEFAULTS.INPUT : DEFAULTS.DIV;
+        let bindingMode = isInputElement ? BINDINGMODES.TWO_WAY : BINDINGMODES.ONE_WAY;
         let sourceProperty = bs[1];
         if (bs[3]){
-            if (bs[3] !== '-')
+            if (bs[3] !== BINDINGMODES.DEFAULT)
                 bindingMode = bs[3];
             if (bs[4])
                 targetProperty = bs[4];
@@ -101,68 +112,61 @@ function JsDataBindings(htmlElement)
         if (_bindings[sourceProperty] === undefined)
         {
             _bindings[sourceProperty] = [];
-            _values[sourceProperty] = "";
+            _values[sourceProperty] = element[targetProperty];
         }
         if (jsDataBinding[sourceProperty] === undefined)
         {
             Object.defineProperty(jsDataBinding, sourceProperty, {
-                get: function () {
-                    return _values[sourceProperty];
-                },
-                set: function (value) {
-                    propertyChanged(null, sourceProperty, value);
-                }
+                get: function () { return _values[sourceProperty]; },
+                set: function (value) { propertyChanged(null, sourceProperty, value); }
             });
         }
 
         let binding = new Binding(element, targetProperty, bindingMode);
-        if (bindingMode !== '->'){
+        if (bindingMode !== BINDINGMODES.ONE_WAY){
             if (element[targetProperty])
                 _values[sourceProperty] = element[targetProperty];
-            if (isInputElement && targetProperty === "value"){
+            if (isInputElement && targetProperty === DEFAULTS.INPUT){
                 element.addEventListener("input", getInputHandler(sourceProperty));
             }
         }
-        if (bindingMode !== '<-' && _values[sourceProperty])
+        if (bindingMode !== BINDINGMODES.ONE_WAY_TO_SOURCE)
             element[targetProperty] = _values[sourceProperty];
         _bindings[sourceProperty].push(binding);
     }
 
-    this.setFormatter = function set_data_formatter(htmlElement, sourceProperty, formatFunction) {
+    this.setFormatter  = function set_data_formatter(htmlElement, sourceProperty, formatFunction) {
         let bindings = _bindings[sourceProperty];
         if (bindings === undefined)
             return false;
-        if (!htmlElement){
-            for (let i = 0; i < bindings.length; i++){
-                bindings[i].formatter = formatFunction;
-            }
-            return true;
-        }
-        else {
-            for (let i = 0; i < bindings.length; i++){
-                if (bindings[i].element !== htmlElement)
-                    continue;
-                bindings[i].formatter = formatFunction;
+        let all = !htmlElement;
+        for (let i = 0; i < bindings.length; i++){
+            let binding = bindings[i];
+            if (all || binding.element !== htmlElement || binding.mode === BINDINGMODES.ONE_WAY_TO_SOURCE)
+                continue;
+            binding.formatter = formatFunction;
+            console.log(binding);
+            if (binding.mode === BINDINGMODES.TWO_WAY)
+                console.warn("Use of formatter function on two-way bindings will affect the value of returned from the element");
+            if (!all)
                 return true;
-            }
         }
-        return false;
+        return all;
     };
     function indexElement(jsDataBinding, htmlElement) {
         let bindings = getBindingsFromAttribute(htmlElement);
-        if (bindings.length === 0)
+        let l = bindings.length;
+        if (l === 0)
             return;
         let isInputElement = htmlElement instanceof HTMLInputElement || htmlElement instanceof HTMLSelectElement;
-        for (let j = 0, max2 = bindings.length; j < max2; j++){
-            bindElement(jsDataBinding, htmlElement, bindings[j], isInputElement);
+        for (let i = 0; i < l; i++){
+            bindElement(jsDataBinding, htmlElement, bindings[i], isInputElement);
         }
     }
     this.indexDomElement = function index_dom_element(htmlElement) {
-        if (typeof htmlElement === 'string')
-            htmlElement = document.querySelector(htmlElement);
-        if (htmlElement === null || !htmlElement instanceof HTMLElement)
-            throw new TypeError("Argument must be an HTMLElement or a selector for one");
-        var elements = htmlElement.querySelectorAll('[data-bindings]');
+        if (!(htmlElement instanceof HTMLElement))
+            throw new TypeError("Argument must be an HTMLElement");
+        var elements = htmlElement.getElementsByTagName("*");
         for (let i = 0, max = elements.length; i < max; i++) {
             indexElement(this, elements[i]);
         }

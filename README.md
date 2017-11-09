@@ -1,19 +1,16 @@
 # JsDataBindings
 
 Simple data-binding engine in pure JavaScript.
+Does not update DOM elements when setting the bound property to the same value it had
 
 Loading the library creates a constructor for the type JsDataBindings: `JsDataBindings(htmlElement)`.
 The constructor can be used with or without an argument. 
 Calling it with an HTMLElement as argument will create a new instance, and call indexDomElement with the passed HTMLElement as parameter.
 
-The 'empty' JsDataBinding object has two functions:
-`indexDomElement(htmlElement)`. This function is used to parse the data-bindings specified in the HTML, 
-and create getter and setter functions for each binding property specified in the bindings.
-
 ### Attribute format
 The data-bindings are declared in the HTML data- attribute: `data-bindings`.
 Each binding is specified with the name of a source property, a binding mode and the name a target property.
-* The **source property** is the name of the getter/setter function that will be created.
+* The **source property** is the name of the property that will be created.
 * The **binding mode** can be one of four options: 
   * `->` 1-way
   * `<->` 2-way
