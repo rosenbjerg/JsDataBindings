@@ -38,8 +38,6 @@ Multiple bindings are simply separated with a comma (`,`)
 
 * `detach()` removes all bindings and getter/setter functions. 
 
-* `setFormatter(htmlElement, sourceProperty, formatFunction)` sets the formatter function for a given 
-
 * One property for each unique source property. 
 
 ### Example
