@@ -1,7 +1,8 @@
 # JsDataBindings
 
 Simple data-binding engine in pure JavaScript.
-Does not update DOM elements when setting the bound property to the same value it had
+Does not update DOM elements when setting the bound property to the same value it already has.
+
 
 Loading the library creates a constructor for the type JsDataBindings: `JsDataBindings(htmlElement)`.
 The constructor can be used with or without an argument. 
@@ -16,7 +17,8 @@ Each binding is specified with the name of a source property, a binding mode and
   * `<->` 2-way
   * `<-` 1-way to source
   * `-` Use default for HTMLElement type
-* The **target property** is the name of the property on the HTMLElement to bind to.
+* The **target property** is the name of the property on the HTMLElement to bind to. 
+Examples: `value`, `disabled`, `click`, `innerHTML`.
 
 The target property can be omitted.
 
@@ -37,6 +39,8 @@ Multiple bindings are simply separated with a comma (`,`)
 * `indexDomElement(htmlElement)` binds all elements inside the html element with `data-bindings` attribute
 
 * `detach()` removes all bindings and getter/setter functions. 
+
+* `onchanged(property function)`
 
 * One property for each unique source property. 
 
