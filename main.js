@@ -13,6 +13,7 @@ cb.click = function () {
     alert("YES")
 };
 
+console.log(cb);
 
 let cb2 = new JsDataBindings(document.getElementById("container2"));
 

@@ -8,6 +8,7 @@ function JsDataBindings(htmlElement) {
     if (htmlElement !== undefined)
         this.indexDomElement(htmlElement);
 }
+// Constants
 JsDataBindings.prototype.BindingModes = {
     OneWay: "->",
     TwoWay: "<->",
@@ -20,7 +21,8 @@ JsDataBindings.prototype.Defaults = {
 };
 JsDataBindings.prototype.Attribute = "data-bindings";
 JsDataBindings.prototype.Regex = / *(\w+) *(([<>-]+) *(\w+)?)? */;
-
+JsDataBindings.prototype.ObserverOptions = { childList:true, subtree:true };
+// Binding class
 JsDataBindings.prototype.Binding = function Binding(element, target, bindingMode) {
     this.element = element;
     this.target = target;
@@ -30,7 +32,7 @@ JsDataBindings.prototype.Binding.prototype.onPropertyChanged = function (sender,
     if (this.element !== sender && this.mode !== JsDataBindings.prototype.BindingModes.OneWayToSource)
         this.element[this.target] = value;
 };
-
+// 'Private' functions
 JsDataBindings.prototype._handleDomMutation = function handle_dom_mutation(that, event) {
     if (event[0].type === "childList"){
         let added = event[0].addedNodes;
@@ -150,7 +152,7 @@ JsDataBindings.prototype._indexElement = function index_element(htmlElement) {
         this._bindElement(htmlElement, bindings[i], isInputElement);
     }
 };
-
+// Public functions
 JsDataBindings.prototype.detach = function detach_all_bindings () {
     if (this._observer){
         this._observer.disconnect();
@@ -188,7 +190,7 @@ JsDataBindings.prototype.indexDomElement = function index_dom_element(htmlElemen
         this._observer = new MutationObserver(function (event) {
             thisRef._handleDomMutation(thisRef, event);
         });
-        this._observer.observe(htmlElement, {childList:true, subtree:true});
+        this._observer.observe(htmlElement, this.ObserverOptions);
     }
 };
 JsDataBindings.prototype.onchanged = function on_property_changed(sourceProperty, callback) {
