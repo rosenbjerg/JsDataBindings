@@ -5,6 +5,7 @@ let cb = new JsDataBindings(document.getElementById("container"));
 
 //
 document.getElementById("container").innerHTML += "<div data-bindings='firstname'></div>";
+document.getElementById("container").class = "test";
 // cb.firstname = "hej";
 cb.onchanged(["x", "y"], function () {
     cb.sum = cb.x * cb.y;
