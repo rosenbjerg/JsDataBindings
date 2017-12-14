@@ -40,7 +40,7 @@ Multiple bindings are simply separated with a comma (`,`)
 
 * `detach()` removes all bindings and getter/setter functions. 
 
-* `onchanged(property function)`
+* `onchanged(properties, function)`
 
 * One property for each unique source property. 
 
