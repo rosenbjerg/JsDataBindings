@@ -39,28 +39,24 @@ JsDataBindings.prototype._handleDomMutation = function handle_dom_mutation(that,
         let addedLength = added.length;
         let removed = event[0].removedNodes;
         let removedLength = removed.length;
-        if (removedLength !== 0){
-            for (let i = 0; i < removedLength; i++){
-                let bindings = that._getBindingsFromAttribute(removed[i]);
-                for (let j = 0, maxj = bindings.length; j < maxj; j++){
-                    let sourceProperty = bindings[j][1];
-                    let jsBindings = that._bindings[sourceProperty];
-                    for (let k = 0, maxk = jsBindings.length; k < maxk; k++){
-                        if (jsBindings[k].element !== removed[i])
-                            continue;
-                        jsBindings.splice(k, 1);
-                        if (jsBindings.length === 0)
-                            delete that._bindings[sourceProperty];
-                        break;
-                    }
+        for (let i = 0; i < removedLength; i++){
+            let bindings = that._getBindingsFromAttribute(removed[i]);
+            for (let j = 0, maxj = bindings.length; j < maxj; j++){
+                let sourceProperty = bindings[j][1];
+                let jsBindings = that._bindings[sourceProperty];
+                for (let k = 0, maxk = jsBindings.length; k < maxk; k++){
+                    if (jsBindings[k].element !== removed[i])
+                        continue;
+                    jsBindings.splice(k, 1);
+                    if (jsBindings.length === 0)
+                        delete that._bindings[sourceProperty];
+                    break;
                 }
             }
         }
-        if (addedLength !== 0) {
-            if (addedLength > removedLength) {
-                for (let i = 0; i < addedLength; i++){
-                    that._indexElement(added[i]);
-                }
+        if (addedLength > removedLength) {
+            for (let i = 0; i < addedLength; i++){
+                that._indexElement(added[i]);
             }
         }
     }
