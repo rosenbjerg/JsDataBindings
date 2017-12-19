@@ -4,22 +4,18 @@
 let cb = new JsDataBindings(document.getElementById("container"));
 
 //
-document.getElementById("container").innerHTML += "<div data-bindings='firstname'></div>";
-document.getElementById("container").class = "test";
-// cb.firstname = "hej";
-cb.onchanged(["x", "y"], function () {
-    cb.sum = cb.x * cb.y;
-});
-cb.click = function () {
-    alert("YES")
-};
-
-console.log(cb);
-
-let cb2 = new JsDataBindings(document.getElementById("container2"));
+// document.getElementById("container").innerHTML += "<div data-bindings='firstname'></div>";
+// document.getElementById("container").class = "test";
+cb.firstname = "John Doe";
+cb.onchanged(["x", "y"], () => cb.sum = cb.x * cb.y);
+cb.onchanged("marked", (s,v) => console.log(v));
+cb.click = () => alert("'click' binding");
+// console.log(cb);
 
 
-if (true){
+
+if (false){
+    let cb2 = new JsDataBindings(document.getElementById("container2"));
     let iterations = 50000;
     for (let i = 0; i < 7; i++){
         let el1 = document.getElementById("daws1");

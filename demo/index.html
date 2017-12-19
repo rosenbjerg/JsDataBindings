@@ -11,19 +11,19 @@
     <input data-bindings="x" type="number">
     <input data-bindings="y" type="number">
     <div data-bindings="sum"></div>
-    <input data-bindings="firstname" value="testa" type="text">
-    <input data-bindings="firstname" value="testb" type="text">
+    <input type="checkbox" data-bindings="marked">
+    <input data-bindings="firstname" value="John" type="text">
     <input data-bindings="firstname" type="text">
     <input data-bindings="lastname" type="text">
     <input data-bindings="city<-, disabled->disabled">
-    <button data-bindings="click->onclick" onclick="alert('hej')">test</button>
+    <button data-bindings="click->onclick">test</button>
     <input data-bindings="zip,bgc->style, disabled -> disabled" type="number">
-    <select data-bindings="s" id="sel">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
+    <select data-bindings="no">
+        <option>1</option>
+        <option>2</option>
+        <option>3</option>
     </select>
-    <div  id="test" data-bindings="firstname"></div>
+    <div data-bindings="firstname"></div>
 </div>
 <div id="container2">
     <input id="daws1" data-bindings="firstname" type="text">

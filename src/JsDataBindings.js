@@ -1,201 +1,260 @@
 "use strict";
-function JsDataBindings(htmlElement) {
-    this._bindings = {};
-    this._values = {};
-    this._handlers = {};
-    this._listeners = {};
-    this._observer = undefined;
-    if (htmlElement !== undefined)
-        this.indexDomElement(htmlElement);
-}
-// Constants
-JsDataBindings.prototype.BindingModes = {
-    OneWay: "->",
-    TwoWay: "<->",
-    OneWayToSource: "<-",
-    Default: "-"
-};
-JsDataBindings.prototype.Defaults = {
-    Input: "value",
-    Div: "innerText"
-};
-JsDataBindings.prototype.Attribute = "data-bindings";
-JsDataBindings.prototype.Regex = / *(\w+) *(([<>-]+) *(\w+)?)? */;
-JsDataBindings.prototype.ObserverOptions = { childList:true, subtree:true };
-// Binding class
-JsDataBindings.prototype.Binding = function Binding(element, target, bindingMode) {
-    this.element = element;
-    this.target = target;
-    this.mode = bindingMode;
-};
-JsDataBindings.prototype.Binding.prototype.onPropertyChanged = function (sender, value){
-    if (this.element !== sender && this.mode !== JsDataBindings.prototype.BindingModes.OneWayToSource)
-        this.element[this.target] = value;
-};
-// 'Private' functions
-JsDataBindings.prototype._handleDomMutation = function handle_dom_mutation(that, event) {
-    if (event[0].type === "childList"){
-        let added = event[0].addedNodes;
-        let addedLength = added.length;
-        let removed = event[0].removedNodes;
-        let removedLength = removed.length;
-        for (let i = 0; i < removedLength; i++){
-            let bindings = that._getBindingsFromAttribute(removed[i]);
-            for (let j = 0, maxj = bindings.length; j < maxj; j++){
-                let sourceProperty = bindings[j][1];
-                let jsBindings = that._bindings[sourceProperty];
-                for (let k = 0, maxk = jsBindings.length; k < maxk; k++){
-                    if (jsBindings[k].element !== removed[i])
-                        continue;
-                    jsBindings.splice(k, 1);
-                    if (jsBindings.length === 0)
-                        delete that._bindings[sourceProperty];
-                    break;
-                }
+
+let JsDataBindings = (function () {
+    const BINDING_MODES = {
+        OneWay: "->",
+        TwoWay: "<->",
+        OneWayToSource: "<-",
+        Default: "-"
+    };
+    const DEFAULT_TARGET = {
+        Input: "value",
+        Checkbox: "checked",
+        Div: "innerText"
+    };
+    const ATTRIBUTE = "data-bindings";
+    const REGEX = /^ *([\w-]+) *((<?->?) *(\w+)?)? *$/;
+    const OBSERVER_OPTIONS = { childList:true, subtree:true, attributes:true, characterData:true };
+
+    function JsDataBindings(htmlElement) {
+        this._map = new Map();
+        this._bindings = {};
+        this._values = {};
+        this._handlers = {};
+        this._listeners = {};
+        this._observer = undefined;
+        if (htmlElement !== undefined)
+            this.indexDomElement(htmlElement);
+    }
+
+    function handleDomMutation(jsdb, event) {
+        for (let i = 0, events = event.length; i < events; i++){
+            let ev = event[i];
+            if (ev.type === "childList"){
+                handleRemovedNodes(jsdb, ev.removedNodes);
+                handleAddedNodes(jsdb, ev.addedNodes);
             }
-        }
-        if (addedLength > removedLength) {
-            for (let i = 0; i < addedLength; i++){
-                that._indexElement(added[i]);
+            else if (ev.type === "attributes"){
+                handleAttributeChanged(jsdb, ev);
+            }
+            else if(ev.type === "characterData"){
+                handleCharacterData(jsdb, ev);
             }
         }
     }
-};
-JsDataBindings.prototype._propertyChanged = function property_changed(sender, sourceProperty, value) {
-    if (this._values[sourceProperty] === value)
-        return;
-    this._values[sourceProperty] = value;
-    let bindings = this._bindings[sourceProperty];
-    for (let i = 0, max = bindings.length; i < max; i++) {
-        bindings[i].onPropertyChanged(sender, value);
-    }
-
-    let listeners = this._listeners[sourceProperty];
-    if (listeners === undefined)
-        return;
-    for (let i = 0, max = listeners.length; i < max; i++) {
-        listeners[i](sender, value);
-    }
-};
-JsDataBindings.prototype._getInputHandler = function get_input_handler(sourceProperty) {
-    if (this._handlers[sourceProperty] === undefined){
-        let thisRef = this;
-        this._handlers[sourceProperty] = function (event) {
-            thisRef._propertyChanged(event.target, sourceProperty, event.target.value);
-        }
-    }
-    return this._handlers[sourceProperty];
-};
-JsDataBindings.prototype._getBindingsFromAttribute = function get_bindings_from_attribute(htmlElement) {
-    let arr = [];
-    if (htmlElement.getAttribute === undefined)
-        return arr;
-    let attr = htmlElement.getAttribute(this.Attribute);
-    if (!attr)
-        return arr;
-    let bindingStrings = attr.split(',');
-    for (let i = 0, max = bindingStrings.length; i < max; i++){
-        let match = bindingStrings[i].match(this.Regex);
-        if (!match[1])
-            continue;
-        arr.push(match);
-    }
-    return arr;
-};
-JsDataBindings.prototype._bindElement = function bind_element(element, bs, isInputElement) {
-    let targetProperty = isInputElement ? this.Defaults.Input : this.Defaults.Div;
-    let bindingMode = isInputElement ? this.BindingModes.TwoWay : this.BindingModes.OneWay;
-    let sourceProperty = bs[1];
-    if (bs[3]){
-        if (bs[3] !== this.BindingModes.Default)
-            bindingMode = bs[3];
-        if (bs[4])
-            targetProperty = bs[4];
-    }
-    if (this._bindings[sourceProperty] === undefined)
-        this._bindings[sourceProperty] = [];
-
-    if (this._values[sourceProperty] === undefined)
-        this._values[sourceProperty] = element[targetProperty];
-
-    if (this[sourceProperty] === undefined)
-    {
-        Object.defineProperty(this, sourceProperty, {
-            get: function () { return this._values[sourceProperty]; },
-            set: function (value) { this._propertyChanged(null, sourceProperty, value); }
-        });
-    }
-    if (bindingMode !== this.BindingModes.OneWayToSource)
-        element[targetProperty] = this._values[sourceProperty];
-
-    let binding = new this.Binding(element, targetProperty, bindingMode);
-    if (bindingMode !== this.BindingModes.OneWay){
-        if (element[targetProperty])
-            this._values[sourceProperty] = element[targetProperty];
-        if (isInputElement && targetProperty === this.Defaults.Input){
-            element.addEventListener("input", this._getInputHandler(sourceProperty));
-        }
-    }
-    this._bindings[sourceProperty].push(binding);
-};
-JsDataBindings.prototype._indexElement = function index_element(htmlElement) {
-    let bindings = this._getBindingsFromAttribute(htmlElement);
-    let l = bindings.length;
-    if (l === 0)
-        return;
-    let isInputElement = htmlElement instanceof HTMLInputElement || htmlElement instanceof HTMLSelectElement;
-    for (let i = 0; i < l; i++){
-        this._bindElement(htmlElement, bindings[i], isInputElement);
-    }
-};
-// Public functions
-JsDataBindings.prototype.detach = function detach_all_bindings () {
-    if (this._observer){
-        this._observer.disconnect();
-        this._observer = null;
-    }
-    for (let prop in this._values){
-        if (!this._values.hasOwnProperty(prop))
-            continue;
-        for (let i in this._bindings[prop]){
-            if (!this._bindings[prop].hasOwnProperty(i))
+    function handleRemovedNodes(jsdb, nodes) {
+        for (let i = 0, nlen = nodes.length; i < nlen; i++){
+            if (!jsdb._map.has(nodes[i]))
                 continue;
-            let binding = this._bindings[prop][i];
-            if (binding.mode !== '->' &&
-                (binding.element instanceof HTMLInputElement ||
-                    binding.element instanceof  HTMLSelectElement)){
-                binding.element.removeEventListener("input", this._getInputHandler(prop));
+            let bindings = jsdb._map.get(nodes[i]);
+            for (let j in bindings){
+                removeBinding(jsdb, bindings[j]);
+            }
+            jsdb._map.delete(nodes[i]);
+        }
+    }
+    function handleAddedNodes(jsdb, nodes) {
+        for (let i = 0, nlen = nodes.length; i < nlen; i++){
+            indexElement(jsdb, nodes[i]);
+        }
+    }
+    function handleAttributeChanged(jsdb, event) {
+        let sender = event.target;
+        if (!jsdb._map.has(sender))
+            return;
+        let target = event.attributeName;
+        let map = jsdb._map.get(event.target);
+        let binding = jsdb._map.get(event.target)[target];
+        if (binding === undefined)
+            return;
+        propertyChanged(jsdb, sender, binding.source, sender[target])
+    }
+    function handleCharacterData(jsdb, event) {
+        console.log(event);
+        let sender = event.target.parentNode;
+        if (!jsdb._map.has(sender))
+            return;
+        let binding = jsdb._map.get(sender)["innerText"];
+        if (binding === undefined || binding.mode === BINDING_MODES.OneWay)
+            return;
+        propertyChanged(jsdb, sender, binding.source, sender[binding.target])
+    }
+
+    function indexElement(jsdb, htmlElement) {
+        let bindings = getBindingsFromAttribute(htmlElement);
+        let l = bindings.length;
+        if (l === 0)
+            return;
+        let nodeName = htmlElement.nodeName.toLowerCase();
+        for (let i = 0; i < l; i++){
+            bindElement(jsdb, htmlElement, bindings[i], nodeName);
+        }
+    }
+    function bindElement(jsdb, htmlElement, bindingMatch, nodeName) {
+        let binding = parseBinding(htmlElement, bindingMatch, nodeName);
+
+        if (jsdb._bindings[binding.source] === undefined)
+            jsdb._bindings[binding.source] = [];
+
+        if (jsdb._values[binding.source] === undefined)
+            jsdb._values[binding.source] = htmlElement[binding.target];
+        else if (binding.mode !== BINDING_MODES.OneWayToSource)
+            htmlElement[binding.target] = jsdb._values[binding.source];
+
+        if (jsdb[binding.source] === undefined)
+        {
+            Object.defineProperty(jsdb, binding.source, {
+                get: () => jsdb._values[binding.source],
+                set: value => propertyChanged(jsdb, null, binding.source, value)
+            });
+        }
+        if (binding.event){
+            htmlElement.addEventListener(binding.event, getInputHandler(jsdb, binding.source, binding.target));
+        }
+        jsdb._bindings[binding.source].push(binding);
+        addToMap(jsdb, htmlElement, binding);
+    }
+    function parseBinding(htmlElement, bindingMatch, nodeName) {
+        let binding = {
+            element: htmlElement,
+            source: bindingMatch[1],
+            mode: (bindingMatch[3] && bindingMatch[3] !== "-")
+                ? bindingMatch[3]
+                : getDefaultBindingMode(nodeName),
+            target: bindingMatch[4]
+                ? bindingMatch[4]
+                : getDefaultTarget(htmlElement, nodeName)
+        };
+        let event = getDefaultEvent(htmlElement, nodeName, binding.target);
+        if (event)
+            binding.event = event;
+        return binding;
+    }
+    function addToMap(jsdb, htmlElement, binding) {
+        let obj;
+        if (jsdb._map.has(htmlElement)){
+            obj = jsdb._map.get(htmlElement);
+            if (obj[binding.target] !== undefined)
+                console.warn("binding overridden");
+        }
+        else {
+            obj = Object.create(null);
+            jsdb._map.set(htmlElement, obj);
+        }
+        obj[binding.target] = binding;
+    }
+    function removeBinding(jsdb, binding) {
+        let bindings = jsdb._bindings[binding.source];
+        let index = bindings.indexOf(binding);
+        if (index !== -1)
+            bindings.splice(index, 1);
+        if (bindings.length === 0)
+            delete jsdb._bindings[binding.source];
+        if (binding.event)
+            binding.element.removeEventListener(binding.event, getInputHandler(jsdb, binding.source, binding.target));
+    }
+
+    function propertyChanged(jsdb, sender, source, value) {
+        if (jsdb._values[source] === value)
+            return;
+        jsdb._values[source] = value;
+        let bindings = jsdb._bindings[source];
+        for (let i = 0, max = bindings.length; i < max; i++) {
+            let binding = bindings[i];
+            if (binding !== sender && binding.mode !== BINDING_MODES.OneWayToSource)
+                binding.element[binding.target] = value;
+        }
+
+        let listeners = jsdb._listeners[source];
+        if (listeners === undefined)
+            return;
+        for (let i = 0, max = listeners.length; i < max; i++) {
+            listeners[i](sender, value);
+        }
+    }
+
+    function getDefaultBindingMode(nodeName) {
+        switch (nodeName){
+            case "input":
+            case "select":
+            case "textarea":
+                return BINDING_MODES.TwoWay;
+            default:
+                return  BINDING_MODES.OneWay;
+        }
+    }
+    function getDefaultEvent(htmlElement, nodeName, target) {
+        if (nodeName === "input"){
+            let type = htmlElement.type;
+            if (target === DEFAULT_TARGET.Checkbox && (type === "checkbox" || type === "radiobutton"))
+                return "change";
+            else if (target === DEFAULT_TARGET.Input)
+                return "input";
+        }
+        else if (nodeName === "select" && target === "value")
+            return "input";
+        else if (nodeName === "textarea" && target === "value")
+            return "input";
+        return false;
+    }
+    function getDefaultTarget(htmlElement, nodeName) {
+        switch (nodeName){
+            case "input":
+                let type = htmlElement.type;
+                if (type === "checkbox" || type === "radiobutton")
+                    return "checked";
+                return "value";
+            case "textarea":
+            case "select":
+                return "value";
+            default:
+                return "innerText";
+        }
+    }
+
+    function getInputHandler(jsdb, source, target) {
+        if (jsdb._handlers[source] === undefined){
+            jsdb._handlers[source] = function (event) {
+                propertyChanged(jsdb, event.target, source, event.target[target])
             }
         }
-        delete this[prop];
+        return jsdb._handlers[source];
     }
-    this._bindings = {};
-    this._values = {};
-    this._handlers = {};
-};
-JsDataBindings.prototype.indexDomElement = function index_dom_element(htmlElement) {
-    if (!(htmlElement instanceof HTMLElement))
-        throw new TypeError("Argument must be an HTMLElement");
-    let elements = htmlElement.getElementsByTagName("*");
-    for (let i = 0, max = elements.length; i < max; i++) {
-        this._indexElement(elements[i]);
+    function getBindingsFromAttribute(htmlElement) {
+        let arr = [], attr;
+        if (htmlElement.getAttribute === undefined || !(attr = htmlElement.getAttribute(ATTRIBUTE)))
+            return arr;
+        let bindingStrings = attr.split(',');
+        for (let i = 0, max = bindingStrings.length; i < max; i++){
+            let match = bindingStrings[i].match(REGEX);
+            if (!match[1])
+                continue;
+            arr.push(match);
+        }
+        return arr;
     }
-    this._indexElement(htmlElement);
-    if (this._observer === undefined && "MutationObserver" in window){
-        let thisRef = this;
-        this._observer = new MutationObserver(function (event) {
-            thisRef._handleDomMutation(thisRef, event);
-        });
-        this._observer.observe(htmlElement, this.ObserverOptions);
-    }
-};
-JsDataBindings.prototype.onchanged = function on_property_changed(sourceProperty, callback) {
-    if (typeof sourceProperty === 'string')
-        sourceProperty = [sourceProperty];
-    for (let i = 0, max = sourceProperty.length; i < max; i++){
-        let prop = sourceProperty[i];
-        if (this._listeners[prop] === undefined)
-            this._listeners[prop] = [];
-        this._listeners[prop].push(callback);
-    }
-};
+
+    JsDataBindings.prototype.indexDomElement = function index_dom_element(htmlElement) {
+        let elements = htmlElement.getElementsByTagName("*");
+        indexElement(this, htmlElement);
+        for (let i = 0, max = elements.length; i < max; i++) {
+            indexElement(this, elements[i]);
+        }
+        if (this._observer === undefined){
+            this._observer = new MutationObserver((event) => handleDomMutation(this, event));
+            this._observer.observe(htmlElement, OBSERVER_OPTIONS);
+        }
+    };
+    JsDataBindings.prototype.onchanged = function on_property_changed(source, callback) {
+        if (typeof source === 'string')
+            source = [ source ];
+        for (let i = 0, max = source.length; i < max; i++){
+            let prop = source[i];
+            if (this._listeners[prop] === undefined)
+                this._listeners[prop] = [];
+            this._listeners[prop].push(callback);
+        }
+    };
+
+    return JsDataBindings;
+}());
