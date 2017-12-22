@@ -17,11 +17,11 @@ let JsDataBindings = (function () {
     const OBSERVER_OPTIONS = { childList:true, subtree:true, attributes:true, characterData:true };
 
     function JsDataBindings(htmlElement) {
-        this._map = new Map();
-        this._bindings = {};
-        this._values = {};
-        this._handlers = {};
-        this._listeners = {};
+        this._map = new WeakMap();
+        this._bindings = Object.create(null);
+        this._values = Object.create(null);
+        this._handlers = Object.create(null);
+        this._listeners = Object.create(null);
         this._observer = undefined;
         if (htmlElement !== undefined)
             this.indexDomElement(htmlElement);
@@ -70,14 +70,15 @@ let JsDataBindings = (function () {
         propertyChanged(jsdb, sender, binding.source, sender[target])
     }
     function handleCharacterData(jsdb, event) {
-        console.log(event);
-        let sender = event.target.parentNode;
-        if (!jsdb._map.has(sender))
-            return;
-        let binding = jsdb._map.get(sender)["innerText"];
-        if (binding === undefined || binding.mode === BINDING_MODES.OneWay)
-            return;
-        propertyChanged(jsdb, sender, binding.source, sender[binding.target])
+        if (event.target.nodeName === "#text"){
+            let sender = event.target.parentNode;
+            if (!jsdb._map.has(sender))
+                return;
+            let binding = jsdb._map.get(sender)["innerText"];
+            if (binding === undefined || binding.mode === BINDING_MODES.OneWay)
+                return;
+            propertyChanged(jsdb, sender, binding.source, sender[binding.target])
+        }
     }
 
     function indexElement(jsdb, htmlElement) {
@@ -254,6 +255,27 @@ let JsDataBindings = (function () {
                 this._listeners[prop] = [];
             this._listeners[prop].push(callback);
         }
+    };
+    JsDataBindings.prototype.detach = function detach_bindings() {
+        if (this._observer){
+            this._observer.disconnect();
+            this._observer = null;
+        }
+        for (let sourceProp in this._bindings){
+            let bindings = this._bindings[sourceProp];
+            for (let i in bindings){
+                let binding = bindings[sourceProp][i];
+                if (binding.event){
+                    binding.element.removeEventListener(binding.event, getInputHandler(this, sourceProp));
+                }
+            }
+            delete this[sourceProp];
+        }
+        _map = new WeakMap();
+        this._bindings = Object.create(null);
+        this._values = Object.create(null);
+        this._handlers = Object.create(null);
+        this._listeners = Object.create(null);
     };
 
     return JsDataBindings;

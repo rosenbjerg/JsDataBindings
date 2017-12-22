@@ -30,7 +30,7 @@ module.exports = function(grunt) {
                     cwd: '.',
                     rename: function (dst, src) {
                         // To keep src js files and make new files as *.min.js :
-                        return dst + '/' + src.replace('.js', '.min.js');
+                        return src.replace('.js', '.min.js');
                     }
                 }]
             }

@@ -29,7 +29,7 @@ Default values for target property:
 The binding mode can be omitted, but only if the target property is also omitted. 
 
 Defaults values for binding mode:
-* `<->` for `input` and `select` HTMLElements
+* `<->` for `input`, `textarea` and `select` HTMLElements
 * `->` for all other elements.
 
 
@@ -66,8 +66,8 @@ let fn = cb.firstname; // Gets the value
 The `cb` object will have a property for _firstname_, _lastname_, _disable_ and _city_.
 
 ### Notes
-[MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) support is required to detect removal of elements inside an indexed html element.
-Consider using a polyfill for MutationObserver if targeting browsers without support for it.
+This library requires support for [MutationObserver](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) and
+[Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
 
 Be aware that bindings to the `<title>` element can be slower than to other elements (10x slower on my machine), 
 so perhaps avoid binding it to properties that change very rapidly, i.e. in a for-loop.
