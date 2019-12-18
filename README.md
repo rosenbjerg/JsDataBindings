@@ -1,5 +1,7 @@
 # JsDataBindings
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/rosenbjerg/JsDataBindings.svg)](https://greenkeeper.io/)
+
 Simple data-binding engine in pure JavaScript.
 Does not update DOM elements when setting the bound property to the same value it already has.
 
